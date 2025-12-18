@@ -9,7 +9,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface FileBrowserViewController : UIDocumentBrowserViewController<UIAdaptivePresentationControllerDelegate,UIDocumentBrowserViewControllerDelegate>
+@interface FileBrowserViewController : UIDocumentBrowserViewController<UIDocumentBrowserViewControllerDelegate>
 
 @end
 
