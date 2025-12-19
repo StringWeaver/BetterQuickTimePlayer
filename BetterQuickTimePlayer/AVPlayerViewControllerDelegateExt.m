@@ -10,6 +10,8 @@
 @property AVPlayer* player;
 @property (nonatomic, strong, nullable) id timeObserver;
 @property NSURL* url;
+@property (nonatomic, weak) UIViewController *parentViewController;
+@property BOOL pipActive;
 @end
 
 @implementation AVPlayerViewControllerDelegateExt
@@ -26,26 +28,70 @@
     _player = [[AVPlayer alloc] init];
     _playerViewController  = [[AVPlayerViewController alloc] init];
     _playerViewController.delegate = self;
-    _playerViewController.presentationController.delegate = self;
     _playerViewController.player = _player;
+    _playerViewController.canStartPictureInPictureAutomaticallyFromInline = NO;
     _player.preventsDisplaySleepDuringVideoPlayback = YES;
+    _pipActive = NO;
 }
 
-- (void)dealloc{
+- (void)configureAVAudioSession {
+    AVAudioSession *session = [AVAudioSession sharedInstance];
+    NSError *error = nil;
+    BOOL ok = [session setCategory:AVAudioSessionCategoryPlayback
+                       withOptions:0
+                             error:&error];
+    if (!ok) {
+        NSLog(@"setCategory error: %@", error);
+    }
+    ok = [session setActive:YES error:&error];
+    if (!ok) {
+        NSLog(@"setActive error: %@", error);
+    }
+}
+- (void)cleanup{
+    if (_timeObserver) {
+        @try {
+            [_player removeTimeObserver:_timeObserver];
+        } @catch (NSException *exception) {
+            // ignore potential exception if already removed
+        }
+        _timeObserver = nil;
+    }
+    [_player pause];
+    //[_player replaceCurrentItemWithPlayerItem:nil];
     if(_url){
         [_url stopAccessingSecurityScopedResource];
         _url = nil;
     }
 }
+- (void)dealloc{
+    [self cleanup];
+}
 
-- (void) openUrl:(NSURL*)url{
+- (void) openUrl:(NSURL*)url from:(UIViewController*)viewController{
+    _parentViewController = viewController;
+    [self cleanup];
+    if(!_pipActive || TARGET_OS_MACCATALYST /* On Mac Catalyst, open a new file when pip view is active would cause DocumentBrowserView Disappear */) {
+        [_parentViewController presentViewController:self.playerViewController animated:YES completion:^{
+            
+        }];
+    }
     _url = url;
     BOOL success = [_url startAccessingSecurityScopedResource];
-    if (!success) return;
-    AVPlayerItem *item = [AVPlayerItem playerItemWithURL:_url];
-    [_player replaceCurrentItemWithPlayerItem:item];
-    [self.player play];
+    if (!success) {
+        _url = nil;
+        return;
+    }
     NSString* filename = url.lastPathComponent;
+    AVPlayerItem *item = [AVPlayerItem playerItemWithURL:_url];
+    AVMutableMetadataItem *metadataItem = [AVMutableMetadataItem new];
+    metadataItem.keySpace = AVMetadataKeySpaceCommon;
+    metadataItem.key = AVMetadataCommonKeyTitle;
+    metadataItem.value = filename;
+    item.externalMetadata = @[metadataItem];
+    [_player replaceCurrentItemWithPlayerItem:item];
+    [self configureAVAudioSession];
+    
     
     double seconds = [[NSUserDefaults standardUserDefaults] doubleForKey:filename];
     if (seconds > 0) {
@@ -61,23 +107,38 @@
         if (!strongSelf) return;
         [strongSelf saveProgressForFilename:filename WithTime:time];
     }];
+    [_player play];
 }
 
-- (void)presentationControllerDidDismiss:(UIPresentationController *)presentationController {
-    if (_timeObserver) {
-        @try {
-            [_player removeTimeObserver:_timeObserver];
-        } @catch (NSException *exception) {
-            // ignore potential exception if already removed
+- (void)saveProgressForFilename:(NSString*)filename WithTime:(CMTime)time  {
+    double sec = CMTimeGetSeconds(time);
+    if (sec > 0 && filename.length > 0) {
+        [[NSUserDefaults standardUserDefaults] setDouble:sec forKey:filename];
+    }
+}
+- (void)playerViewControllerWillStartPictureInPicture:(AVPlayerViewController *)playerViewController {
+    _pipActive = YES;
+}
+- (void) playerViewControllerDidStopPictureInPicture:(AVPlayerViewController *) playerViewController{
+    _pipActive = NO;
+}
+- (void)playerViewController:(AVPlayerViewController *)playerViewController restoreUserInterfaceForPictureInPictureStopWithCompletionHandler:(void (^)(BOOL restored))completionHandler {
+    UIViewController *strongParentViewController = _parentViewController;
+
+    if(strongParentViewController){
+        if(_playerViewController.presentingViewController != strongParentViewController){
+            [strongParentViewController presentViewController:playerViewController
+                                     animated:YES
+                                   completion:^{
+                completionHandler(YES);
+            }];
+        } else { // MacCatalyst edge case
+            completionHandler(YES);
         }
-        _timeObserver = nil;
+    }else{
+        completionHandler(NO);
     }
-    [_player pause];
-    [_player replaceCurrentItemWithPlayerItem:nil];
-    if(_url){
-        [_url stopAccessingSecurityScopedResource];
-        _url = nil;
-    }
+    
 }
 
 
@@ -93,11 +154,6 @@
     }
 }
 
-- (void)saveProgressForFilename:(NSString*)filename WithTime:(CMTime)time  {
-    double sec = CMTimeGetSeconds(time);
-    if (sec > 0 && filename.length > 0) {
-        [[NSUserDefaults standardUserDefaults] setDouble:sec forKey:filename];
-    }
-}
+
 
 @end

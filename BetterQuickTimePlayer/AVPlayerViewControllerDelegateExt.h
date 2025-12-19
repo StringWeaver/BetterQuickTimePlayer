@@ -10,9 +10,9 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface AVPlayerViewControllerDelegateExt :NSObject<AVPlayerViewControllerDelegate, UIAdaptivePresentationControllerDelegate>
+@interface AVPlayerViewControllerDelegateExt :NSObject<AVPlayerViewControllerDelegate>
 @property AVPlayerViewController* playerViewController;
-- (void) openUrl:(NSURL*)url;
+- (void) openUrl:(NSURL*)url from:(UIViewController*)viewController;
 @end
 
 NS_ASSUME_NONNULL_END

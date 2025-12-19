@@ -28,9 +28,8 @@
 
 - (void)documentBrowser:(UIDocumentBrowserViewController *)controller didPickDocumentsAtURLs:(NSArray<NSURL *> *)urls {
     
-    [controller presentViewController:_playerViewControllerDelegate.playerViewController animated:YES completion:^{
-        [self.playerViewControllerDelegate openUrl:urls.firstObject];
-    }];
+    [self.playerViewControllerDelegate openUrl:urls.firstObject from:self];
+    
     
 }
 /*
