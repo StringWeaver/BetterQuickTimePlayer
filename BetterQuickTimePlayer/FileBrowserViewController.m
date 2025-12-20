@@ -22,15 +22,14 @@
     _playerViewControllerDelegate = [[AVPlayerViewControllerDelegateExt alloc] init];
     self.allowsPickingMultipleItems = YES;
     self.allowsDocumentCreation = NO;
-
 }
 
+- (void) openUrl:(NSURL*)url {
+    [self.playerViewControllerDelegate openUrl:url from:self];
+}
 
 - (void)documentBrowser:(UIDocumentBrowserViewController *)controller didPickDocumentsAtURLs:(NSArray<NSURL *> *)urls {
-    
-    [self.playerViewControllerDelegate openUrl:urls.firstObject from:self];
-    
-    
+    [self openUrl:urls.firstObject];
 }
 /*
 #pragma mark - Navigation

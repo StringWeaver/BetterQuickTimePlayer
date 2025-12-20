@@ -87,7 +87,7 @@
     AVMutableMetadataItem *metadataItem = [AVMutableMetadataItem new];
     metadataItem.keySpace = AVMetadataKeySpaceCommon;
     metadataItem.key = AVMetadataCommonKeyTitle;
-    metadataItem.value = filename;
+    metadataItem.value = trimLeadingNonDigits(filename);
     item.externalMetadata = @[metadataItem];
     [_player replaceCurrentItemWithPlayerItem:item];
     [self configureAVAudioSession];
@@ -154,6 +154,14 @@
     }
 }
 
+static NSString *trimLeadingNonDigits(NSString *input) {
+    NSCharacterSet *digits = [NSCharacterSet decimalDigitCharacterSet];
+    NSRange r = [input rangeOfCharacterFromSet:digits];
+    if (r.location == NSNotFound) {
+        return @"";
+    }
+    return [input substringFromIndex:r.location];
+}
 
 
 @end
