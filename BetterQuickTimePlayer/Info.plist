@@ -58,5 +58,7 @@
 	<array>
 		<string>audio</string>
 	</array>
+	<key>UISupportsTrueScreenSizeOnMac</key>
+	<true/>
 </dict>
 </plist>
