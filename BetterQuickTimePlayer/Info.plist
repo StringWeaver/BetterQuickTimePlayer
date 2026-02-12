@@ -58,7 +58,13 @@
 	<array>
 		<string>audio</string>
 	</array>
+	<key>UILaunchToFullScreenByDefaultOnMac</key>
+	<true/>
 	<key>UISupportsTrueScreenSizeOnMac</key>
+	<true/>
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<true/>
 </dict>
 </plist>
